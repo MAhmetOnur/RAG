@@ -1,6 +1,7 @@
 import os
 import re
 import openai
+import logging
 import pinecone
 from dotenv import load_dotenv
 
@@ -24,42 +25,40 @@ PINECONE_API_ENV = os.getenv("PINECONE_API_ENV")
 ######################################## LOADING DOCUMENT ##############################################################
 
 def load_document(file_path_or_url):
-    """
-    Load a document based on its format or URL.
+    try:
+        # Check if the input is a URL
+        if re.match(r'https?://', file_path_or_url):
+            loader = UnstructuredURLLoader(urls=[file_path_or_url])
+            return loader.load()
 
-    :param file_path_or_url: The file path or URL of the document.
-    :return: The loaded document data.
-    """
+        # Determine the file extension
+        _, file_extension = os.path.splitext(file_path_or_url)
+        file_extension = file_extension.lower()
 
-    # Check if the input is a URL
-    if re.match(r'https?://', file_path_or_url):
-        loader = UnstructuredURLLoader(urls = [file_path_or_url])
+        # Select the appropriate loader based on the file extension
+        if file_extension == '.pdf':
+            loader = PyPDFLoader(file_path_or_url)
+
+        elif file_extension == '.csv':
+            loader = CSVLoader(file_path_or_url)
+
+        elif file_extension in ['.xlsx', '.xls']:
+            loader = UnstructuredExcelLoader(file_path_or_url, mode="elements")
+
+        elif file_extension == '.pptx':
+            loader = UnstructuredPowerPointLoader(file_path_or_url)
+
+        elif file_extension in ['.doc', '.docx']:
+            loader = UnstructuredWordDocumentLoader(file_path_or_url)
+
+        else:
+            raise ValueError(f"Unsupported file format: {file_extension}")
+
         return loader.load()
 
-    # Determine the file extension
-    _, file_extension = os.path.splitext(file_path_or_url)
-    file_extension = file_extension.lower()
-
-    # Select the appropriate loader based on the file extension
-    if file_extension == '.pdf':
-        loader = PyPDFLoader(file_path_or_url)
-
-    elif file_extension == '.csv':
-        loader = CSVLoader(file_path_or_url)
-
-    elif file_extension in ['.xlsx', '.xls']:
-        loader = UnstructuredExcelLoader(file_path_or_url, mode = "elements")
-
-    elif file_extension == '.pptx':
-        loader = UnstructuredPowerPointLoader(file_path_or_url)
-
-    elif file_extension in ['.doc', '.docx']:
-        loader = UnstructuredWordDocumentLoader(file_path_or_url)
-
-    else:
-        raise ValueError(f"Unsupported file format: {file_extension}")
-
-    return loader.load()
+    except Exception as e:
+        logging.error(f"Error loading document: {e}")
+        return None
 
 
 def process_and_index_documents(file_path_or_url,
