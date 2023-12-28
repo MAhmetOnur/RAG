@@ -53,7 +53,7 @@ def load_document(file_path_or_url):
     elif file_extension == '.pptx':
         loader = UnstructuredPowerPointLoader(file_path_or_url)
 
-    elif file_extension in ['.doc','.docx']:
+    elif file_extension in ['.doc', '.docx']:
         loader = UnstructuredWordDocumentLoader(file_path_or_url)
 
     else:
@@ -94,9 +94,7 @@ def process_and_index_documents(file_path_or_url,
 
     embeddings = OpenAIEmbeddings()
 
-    docsearch = Pinecone.from_texts([t.page_content for t in texts],
-                                    embeddings,
-                                    index_name = index_name)
+    Pinecone.from_texts([t.page_content for t in texts], embeddings, index_name = index_name)
 
     print("Documents processed and indexed successfully.")
 
@@ -105,8 +103,3 @@ process_and_index_documents("",
                             PINECONE_API_KEY,
                             PINECONE_API_ENV,
                             "rag-system")
-
-# pptx
-# docx
-# pdf
-# csv
